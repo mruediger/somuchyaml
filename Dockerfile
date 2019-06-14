@@ -23,5 +23,7 @@ FROM scratch
 COPY --from=builder /go/bin/somuchyaml /go/bin/somuchyaml
 COPY --from=builder /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/ca-certificates.crt
 
+COPY yaml.jpg .
+
 # Run the hello binary.
 ENTRYPOINT ["/go/bin/somuchyaml"]
