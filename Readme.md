@@ -21,3 +21,15 @@ Flags:
   --channel="town-square"  the channel the bot will listen
   --goldenfile             Enable golden file output.
 ```
+
+
+Instead of the command line parameters, environment variables can be used:
+
+```
+SOMUCHYAML_SERVER
+SOMUCHYAML_WEBSOCKET
+SOMUCHYAML_USERNAME
+SOMUCHYAML_PASSWORD
+SOMUCHYAML_TEAM
+SOMUCHYAML_CHANNEL
+```

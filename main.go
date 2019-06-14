@@ -14,7 +14,7 @@ import (
 )
 
 var (
-	app       = kingpin.New("somuchyaml", "A mattermost bot.")
+	app       = kingpin.New("somuchyaml", "A mattermost bot.").DefaultEnvars()
 	server    = app.Flag("server", "server url").Required().String()
 	websocket = app.Flag("websocket", "the websocket url used for listening").Required().String()
 	username  = app.Flag("username", "username to connect to the server").Required().String()
