@@ -92,7 +92,8 @@ func main() {
 }
 
 func matchMessage(message string) bool {
-	yamlRe := regexp.MustCompile("^(.*[[:^alpha:]]+|)y|Ya|Am|Al|L([[:^alpha:]]+.*|)$")
+	yamlRe := regexp.MustCompile("^(.*[[:space:]]+|)(y|Y)(a|A)(m|M)(l|L)([[:space:]]+.*|)$")
+
 	return yamlRe.MatchString(message)
 }
 

@@ -44,7 +44,10 @@ func TestMatchMessage(t *testing.T) {
 		{"faooudtainedutraine", false},
 		{"dies ist ein yaml", true},
 		{"fooyamlbar", false},
-		{"YaMl", true},
+		{"yaml", true},
+		{".yaml", false},
+		{"Ya Ml", false},
+		{"yAmL", true},
 	}
 
 	for _, check := range checks {
