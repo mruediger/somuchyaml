@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"os"
 	"testing"
+	"time"
 
 	"encoding/json"
 
@@ -54,6 +55,23 @@ func TestMatchMessage(t *testing.T) {
 		actual := matchMessage(check.message)
 		if actual != check.expected {
 			t.Fatalf("%s: %t != %t", check.message, actual, check.expected)
+		}
+	}
+}
+
+func TestMatchFrequency(t *testing.T) {
+	checks := []struct {
+		start, end time.Time
+		expected   bool
+	}{
+		{time.Unix(42, 0), time.Unix(43, 0), true},
+		{time.Unix(42, 0), time.Unix(50, 0), false},
+	}
+
+	for _, check := range checks {
+		actual := matchFrequency(check.start, check.end)
+		if actual != check.expected {
+			t.Fatalf("%s: %t != %t", check.end.Sub(check.start), actual, check.expected)
 		}
 	}
 }

@@ -8,6 +8,7 @@ import (
 	"os/signal"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/mattermost/mattermost-server/model"
 	"gopkg.in/alecthomas/kingpin.v2"
@@ -20,10 +21,9 @@ var (
 	username  = app.Flag("username", "username to connect to the server").Required().String()
 	password  = app.Flag("password", "password to connect to the server").Required().String()
 
-	team    = app.Flag("team", "the team on the server").Default("darksystem").String()
-	channel = app.Flag("channel", "the channel the bot will listen").Default("town-square").String()
-
 	goldenfile = app.Flag("goldenfile", "Enable golden file output.").Bool()
+
+	lastMatch = time.Unix(0, 0)
 )
 
 func main() {
@@ -32,18 +32,6 @@ func main() {
 	client := model.NewAPIv4Client(*server)
 
 	if _, resp := client.Login(*username, *password); resp.Error != nil {
-		log.Println(resp.Error)
-		os.Exit(1)
-	}
-
-	team, resp := client.GetTeamByName(*team, "")
-	if resp.Error != nil {
-		log.Println(resp.Error)
-		os.Exit(1)
-	}
-
-	channel, resp := client.GetChannelByName(*channel, team.Id, "")
-	if resp.Error != nil {
 		log.Println(resp.Error)
 		os.Exit(1)
 	}
@@ -67,7 +55,7 @@ func main() {
 
 	ws.Listen()
 
-	var handler func(*model.Post, *model.Client4, *model.Channel)
+	var handler func(*model.Post, *model.Client4)
 
 	if *goldenfile {
 		handler = responseOutput
@@ -81,7 +69,7 @@ func main() {
 			case event := <-ws.EventChannel:
 				if s, ok := event.Data["post"].(string); ok {
 					post := model.PostFromJson(strings.NewReader(s))
-					handler(post, client, channel)
+					handler(post, client)
 				}
 			}
 		}
@@ -93,39 +81,46 @@ func main() {
 
 func matchMessage(message string) bool {
 	yamlRe := regexp.MustCompile("^(.*[[:space:]]+|)((?i)yaml)([[:space:]]+.*|)$")
-
 	return yamlRe.MatchString(message)
 }
 
-func sendYaml(post *model.Post, client *model.Client4, channel *model.Channel) {
-	if matchMessage(post.Message) {
-		filename := "yaml.jpg"
-
-		file, err := ioutil.ReadFile(filename)
-		if err != nil {
-			log.Println(err)
-			os.Exit(1)
-		}
-
-		fileinfo, resp := client.UploadFile(file, channel.Id, filename)
-
-		if resp.Error != nil {
-			log.Println(resp.Error)
-			os.Exit(1)
-		}
-
-		post := &model.Post{}
-		post.ChannelId = channel.Id
-		post.Filenames = []string{"filename"}
-		post.FileIds = []string{fileinfo.FileInfos[0].Id}
-
-		if _, resp := client.CreatePost(post); resp.Error != nil {
-			log.Println(err)
-			os.Exit(1)
-		}
-	}
+func matchFrequency(lastMatch time.Time, now time.Time) bool {
+	return now.Sub(lastMatch) < 5*time.Second
 }
 
-func responseOutput(post *model.Post, client *model.Client4, channel *model.Channel) {
+func sendYaml(originalPost *model.Post, client *model.Client4) {
+	if matchMessage(originalPost.Message) {
+		if matchFrequency(lastMatch, time.Now()) {
+			filename := "yaml.jpg"
+
+			file, err := ioutil.ReadFile(filename)
+			if err != nil {
+				log.Println(err)
+				os.Exit(1)
+			}
+
+			fileinfo, resp := client.UploadFile(file, originalPost.ChannelId, filename)
+
+			if resp.Error != nil {
+				log.Println(resp.Error)
+				os.Exit(1)
+			}
+
+			post := &model.Post{}
+			post.ChannelId = originalPost.ChannelId
+			post.Filenames = []string{"filename"}
+			post.FileIds = []string{fileinfo.FileInfos[0].Id}
+
+			if _, resp := client.CreatePost(post); resp.Error != nil {
+				log.Println(err)
+				os.Exit(1)
+			}
+		}
+		lastMatch = time.Now()
+	}
+
+}
+
+func responseOutput(post *model.Post, client *model.Client4) {
 	fmt.Println(post.ToUnsanitizedJson())
 }
